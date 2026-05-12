@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MiniCraft</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+overflow:hidden;
+background:#87CEEB;
+font-family:Arial,sans-serif;
+}
+canvas{
+display:block;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+const TILE = 40;
+const WORLD_W = 250;
+const WORLD_H = 70;
+
+let time = 0;
+let selected = 0;
+
+const blockTypes = [
+    "grass",
+    "dirt",
+    "stone",
+    "wood",
+    "leaf"
+];
+
+let world = [];
+
+const player = {
+    x: 400,
+    y: 100,
+    w: 30,
+    h: 50,
+    dx: 0,
+    dy: 0,
+    speed: 5,
+    sprint: 8,
+    jump: -14,
+    grounded: false,
+    health: 5
+};
+
+const keys = {};
+
+addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+
+    if("12345".includes(e.key)){
+        selected = Number(e.key)-1;
+    }
+});
+
+addEventListener("keyup", e=>{
+    keys[e.key.toLowerCase()] = false;
+});
+
+function generateWorld(){
+
+    for(let y=0;y<WORLD_H;y++){
+        world[y] = [];
+    }
+
+    for(let x=0;x<WORLD_W;x++){
+
+        let height =
+        35 +
+        Math.floor(Math.sin(x*0.1)*5) +
+        Math.floor(Math.sin(x*0.03)*8);
+
+        for(let y=0;y<WORLD_H;y++){
+
+            if(y > height){
+                world[y][x] = "stone";
+            }
+            else if(y > height-3){
+                world[y][x] = "dirt";
+            }
+            else if(y === height){
+                world[y][x] = "grass";
+            }
+            else{
+                world[y][x] = null;
+            }
+        }
+
+        // Trees
+        if(Math.random() < 0.08){
+
+            let trunkHeight =
+            3 + Math.floor(Math.random()*3);
+
+            for(let i=1;i<=trunkHeight;i++){
+                if(height-i > 0)
+                    world[height-i][x] =
+                    "wood";
+            }
+
+            for(let ly=-2;ly<=2;ly++){
+                for(let lx=-2;lx<=2;lx++){
+
+                    if(Math.abs(lx)+Math.abs(ly) < 4){
+
+                        let tx = x + lx;
+                        let ty =
+                        height -
+                        trunkHeight +
+                        ly;
+
+                        if(
+                            tx>=0 &&
+                            tx<WORLD_W &&
+                            ty>=0 &&
+                            ty<WORLD_H
+                        ){
+                            if(!world[ty][tx]){
+                                world[ty][tx] =
+                                "leaf";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+generateWorld();
+
+function getBlock(px,py){
+
+    let tx =
+    Math.floor(px/TILE);
+
+    let ty =
+    Math.floor(py/TILE);
+
+    if(
+        tx < 0 ||
+        ty < 0 ||
+        tx >= WORLD_W ||
+        ty >= WORLD_H
+    ){
+        return "stone";
+    }
+
+    return world[ty][tx];
+}
+
+function solid(block){
+    return block !== null;
+}
+
+function update(){
+
+    let speed =
+    keys["shift"]
+    ? player.sprint
+    : player.speed;
+
+    player.dx = 0;
+
+    if(keys["a"])
+        player.dx = -speed;
+
+    if(keys["d"])
+        player.dx = speed;
+
+    if(keys[" "] &&
+       player.grounded){
+        player.dy =
+        player.jump;
+    }
+
+    player.dy += 0.7;
+
+    // X move
+    player.x += player.dx;
+
+    if(player.dx > 0){
+
+        if(
+            solid(getBlock(
+            player.x+player.w,
+            player.y+5)) ||
+
+            solid(getBlock(
+            player.x+player.w,
+            player.y+45))
+        ){
+            player.x =
+            Math.floor(
+            (player.x+player.w)
+            /TILE)*TILE
+            - player.w;
+        }
+    }
+
+    if(player.dx < 0){
+
+        if(
+            solid(getBlock(
+            player.x,
+            player.y+5)) ||
+
+            solid(getBlock(
+            player.x,
+            player.y+45))
+        ){
+            player.x =
+            Math.floor(
+            player.x/TILE+1)
+            * TILE;
+        }
+    }
+
+    // Y move
+    player.y += player.dy;
+    player.grounded = false;
+
+    if(player.dy > 0){
+
+        if(
+            solid(getBlock(
+            player.x+5,
+            player.y+player.h)) ||
+
+            solid(getBlock(
+            player.x+25,
+            player.y+player.h))
+        ){
+
+            player.y =
+            Math.floor(
+            (player.y+
+            player.h)/TILE)
+            * TILE
+            - player.h;
+
+            player.dy = 0;
+            player.grounded = true;
+        }
+    }
+
+    if(player.dy < 0){
+
+        if(
+            solid(getBlock(
+            player.x+5,
+            player.y)) ||
+
+            solid(getBlock(
+            player.x+25,
+            player.y))
+        ){
+            player.dy = 0;
+        }
+    }
+
+    time += 0.002;
+}
+
+canvas.addEventListener(
+"mousedown", e=>{
+
+    const camX =
+    player.x -
+    canvas.width/2;
+
+    const camY =
+    player.y -
+    canvas.height/2;
+
+    const mx =
+    e.clientX + camX;
+
+    const my =
+    e.clientY + camY;
+
+    const tx =
+    Math.floor(mx/TILE);
+
+    const ty =
+    Math.floor(my/TILE);
+
+    if(
+        tx>=0 &&
+        ty>=0 &&
+        tx<WORLD_W &&
+        ty<WORLD_H
+    ){
+
+        // Break
+        if(e.button===0){
+            world[ty][tx] =
+            null;
+        }
+
+        // Place
+        if(e.button===2){
+            world[ty][tx] =
+            blockTypes[selected];
+        }
+    }
+});
+
+canvas.addEventListener(
+"contextmenu",
+e=>e.preventDefault()
+);
+
+function drawBlock(type,x,y){
+
+    if(type==="grass"){
+
+        ctx.fillStyle =
+        "#8B5A2B";
+
+        ctx.fillRect(
+        x,y,TILE,TILE);
+
+        ctx.fillStyle =
+        "#4CAF50";
+
+        ctx.fillRect(
+        x,y,TILE,10);
+    }
+
+    if(type==="dirt"){
+        ctx.fillStyle =
+        "#8B5A2B";
+
+        ctx.fillRect(
+        x,y,TILE,TILE);
+    }
+
+    if(type==="stone"){
+        ctx.fillStyle =
+        "#8E8E8E";
+
+        ctx.fillRect(
+        x,y,TILE,TILE);
+    }
+
+    if(type==="wood"){
+        ctx.fillStyle =
+        "#7B4B25";
+
+        ctx.fillRect(
+        x,y,TILE,TILE);
+    }
+
+    if(type==="leaf"){
+        ctx.fillStyle =
+        "#2E8B57";
+
+        ctx.fillRect(
+        x,y,TILE,TILE);
+    }
+
+    ctx.strokeStyle =
+    "rgba(0,0,0,.1)";
+
+    ctx.strokeRect(
+    x,y,TILE,TILE);
+}
+
+function render(){
+
+    // Day-night sky
+    let sky =
+    Math.sin(time)*40 + 180;
+
+    ctx.fillStyle =
+    `rgb(${sky-20},
+    ${sky},
+    255)`;
+
+    ctx.fillRect(
+    0,0,
+    canvas.width,
+    canvas.height);
+
+    // Sun
+    ctx.beginPath();
+    ctx.arc(
+    120,
+    100 +
+    Math.sin(time)*50,
+    45,
+    0,
+    Math.PI*2);
+
+    ctx.fillStyle =
+    "yellow";
+    ctx.fill();
+
+    // Clouds
+    ctx.fillStyle =
+    "rgba(255,255,255,.8)";
+
+    for(let i=0;i<8;i++){
+
+        let cx =
+        (i*300 +
+        time*100) %
+        (canvas.width+300);
+
+        ctx.fillRect(
+        cx,
+        80+i*20,
+        100,
+        30);
+    }
+
+    const camX =
+    player.x -
+    canvas.width/2;
+
+    const camY =
+    player.y -
+    canvas.height/2;
+
+    // Draw world
+    for(let y=0;y<WORLD_H;y++){
+        for(let x=0;x<WORLD_W;x++){
+
+            let block =
+            world[y][x];
+
+            if(block){
+
+                drawBlock(
+                block,
+                x*TILE-camX,
+                y*TILE-camY
+                );
+            }
+        }
+    }
+
+    // Player
+    ctx.fillStyle =
+    "#E63946";
+
+    ctx.fillRect(
+    player.x-camX,
+    player.y-camY,
+    player.w,
+    player.h
+    );
+
+    // Crosshair
+    ctx.strokeStyle =
+    "white";
+
+    ctx.beginPath();
+    ctx.moveTo(
+    canvas.width/2-10,
+    canvas.height/2);
+
+    ctx.lineTo(
+    canvas.width/2+10,
+    canvas.height/2);
+
+    ctx.moveTo(
+    canvas.width/2,
+    canvas.height/2-10);
+
+    ctx.lineTo(
+    canvas.width/2,
+    canvas.height/2+10);
+
+    ctx.stroke();
+
+    // Hotbar
+    const width = 350;
+    const start =
+    canvas.width/2
+    - width/2;
+
+    ctx.fillStyle =
+    "rgba(0,0,0,.4)";
+
+    ctx.fillRect(
+    start,
+    canvas.height-90,
+    width,
+    70
+    );
+
+    for(let i=0;i<
+        blockTypes.length;i++){
+
+        const x =
+        start + i*65 + 12;
+
+        ctx.fillStyle =
+        i===selected
+        ? "gold"
+        : "white";
+
+        ctx.fillRect(
+        x,
+        canvas.height-80,
+        50,
+        50);
+
+        drawBlock(
+        blockTypes[i],
+        x+5,
+        canvas.height-75
+        );
+    }
+
+    // Hearts
+    ctx.font =
+    "28px Arial";
+
+    ctx.fillText(
+    "❤️".repeat(
+    player.health),
+    20,40
+    );
+
+    ctx.fillStyle =
+    "white";
+
+    ctx.font =
+    "18px Arial";
+
+    ctx.fillText(
+    "WASD Move | Space Jump | Shift Sprint | Left Break | Right Place | 1-5 Select",
+    20,
+    canvas.height-20
+    );
+}
+
+function loop(){
+    update();
+    render();
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
