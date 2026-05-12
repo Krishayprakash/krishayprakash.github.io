@@ -273,13 +273,43 @@ This novel is the first in the Swaraj Chaturvedi Adventures series — a saga th
 </section>
 
 <section id="contact">
+<section id="contact">
     <h2>Contact</h2>
+
     <p>Email: <b>krishaywrites@gmail.com</b></p>
-    <button onclick="sayHello()">Say Hello</button>
-	<form onsubmit="return validateForm()">
-    <input type="text" id="name" placeholder="Your Name"><br><br>
-    <input type="email" id="email" placeholder="Your Email"><br><br>
-    <button type="submit">Send</button>
+
+    <form action="https://formspree.io/f/xvzllvnv" method="POST">
+
+        <input
+        type="text"
+        name="name"
+        placeholder="Your Name"
+        required>
+
+        <br><br>
+
+        <input
+        type="email"
+        name="email"
+        placeholder="Your Email"
+        required>
+
+        <br><br>
+
+        <textarea
+        name="message"
+        placeholder="Write your message here..."
+        rows="5"
+        required></textarea>
+
+        <br><br>
+
+        <button type="submit">
+            Send Message
+        </button>
+
+    </form>
+</section>
 </form>
 </section>
 
@@ -336,6 +366,18 @@ function toggleMode() {
 function sayHello() {
         alert("Thank you for visiting my author website 😊");
     }
+	function validateForm() {
+    let name = document.getElementById("name").value;
+    let email = document.getElementById("email").value;
+
+    if(name === "" || email === "") {
+        alert("Please fill all required fields.");
+        return false;
+    }
+
+    alert("Thank you for contacting me!");
+    return true;
+}
 </script>
 
 </body>
