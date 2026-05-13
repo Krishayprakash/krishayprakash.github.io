@@ -2,193 +2,219 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MiniCraft</title>
+<title>MiniCraft - With Saving</title>
 <style>
-body {
-    margin: 0;
-    overflow: hidden;
-    background: #87CEEB;
-    font-family: Arial, sans-serif;
-    user-select: none;
-}
-#ui {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-    z-index: 10;
-    pointer-events: none;
-    line-height: 1.5;
-}
-#crosshair {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 10;
-}
-#crosshair::before,
-#crosshair::after {
-    content: "";
-    position: absolute;
-    background: white;
-}
-#crosshair::before {
-    width: 2px;
-    height: 20px;
-    left: 9px;
-}
-#crosshair::after {
-    width: 20px;
-    height: 2px;
-    top: 9px;
-}
+    body { margin: 0; overflow: hidden; background: #87CEEB; font-family: Arial, sans-serif; user-select: none; }
+    #ui {
+        position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white;
+        padding: 12px; border-radius: 8px; z-index: 10; pointer-events: none; line-height: 1.4;
+    }
+    #notification {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.8); color: #0f0; padding: 15px 25px; border-radius: 8px;
+        font-size: 18px; display: none; z-index: 20;
+    }
+    #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; }
+    #crosshair::before, #crosshair::after { content: ""; position: absolute; background: white; }
+    #crosshair::before { width: 2px; height: 20px; left: 9px; }
+    #crosshair::after { width: 20px; height: 2px; top: 9px; }
+    #selected {
+        position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 8px; color: white;
+        display: flex; align-items: center; gap: 12px; z-index: 10; font-size: 18px;
+    }
 </style>
 </head>
 <body>
-
 <div id="ui">
-<strong>MiniCraft Controls:</strong><br>
-• Click Screen to Play & Lock Mouse<br>
-• WASD to Move Around<br>
-• Move Mouse to Look Around<br>
-• SPACE to Jump<br>
-• Left Click to Destroy Block<br>
-• Right Click to Place Block
+    <strong>MiniCraft</strong><br>
+    Click to lock mouse<br>
+    WASD Move • Mouse Look • SPACE Jump<br>
+    Left Click Break • Right Click Place<br>
+    1-5 Select Block<br>
+    <strong>S</strong> = Save • <strong>L</strong> = Load • <strong>R</strong> = Reset
 </div>
-
 <div id="crosshair"></div>
+<div id="selected">Selected: <span id="blockName" style="font-weight:bold">Grass</span></div>
+<div id="notification"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script>
-// Game Setup
+// =============== SETUP ===============
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.FogExp2(0x87CEEB, 0.05);
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.022);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Lighting
-const sunlight = new THREE.DirectionalLight(0xffffff, 0.8);
-sunlight.position.set(20, 40, 20);
-scene.add(sunlight);
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+scene.add(new THREE.DirectionalLight(0xffffff, 1.1));
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-// Block Map Management
-const blocks = [];
+// =============== BLOCKS ===============
 const blockMap = new Map();
 const geometry = new THREE.BoxGeometry(1, 1, 1);
 
-function getCoordKey(x, y, z) {
-    return `${x},${y},${z}`;
-}
+const BLOCK_TYPES = {
+    grass:  { color: 0x4CAF50, name: "Grass" },
+    dirt:   { color: 0x8B5A2B, name: "Dirt" },
+    stone:  { color: 0x777777, name: "Stone" },
+    wood:   { color: 0xA0522D, name: "Wood" },
+    leaves: { color: 0x228B22, name: "Leaves" }
+};
 
-function createBlock(x, y, z, color) {
-    const key = getCoordKey(x, y, z);
-    if (blockMap.has(key)) return null;
+function getKey(x, y, z) { return `${Math.floor(x)},${Math.floor(y)},${Math.floor(z)}`; }
 
-    const material = new THREE.MeshLambertMaterial({ color });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(x, y, z);
+function createBlock(x, y, z, type = 'grass') {
+    const key = getKey(x, y, z);
+    if (blockMap.has(key)) return;
     
-    scene.add(cube);
-    blocks.push(cube);
-    blockMap.set(key, cube);
-    return cube;
+    const material = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[type].color });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.userData.type = type;
+    
+    scene.add(mesh);
+    blockMap.set(key, mesh);
 }
 
 function removeBlock(mesh) {
-    const idx = blocks.indexOf(mesh);
-    if (idx > -1) blocks.splice(idx, 1);
-    
-    const key = getCoordKey(mesh.position.x, mesh.position.y, mesh.position.z);
+    if (!mesh) return;
+    const key = getKey(mesh.position.x, mesh.position.y, mesh.position.z);
     blockMap.delete(key);
     scene.remove(mesh);
 }
 
-// Terrain Generation
-for (let x = -15; x <= 15; x++) {
-    for (let z = -15; z <= 15; z++) {
-        let height = Math.floor(Math.sin(x * 0.2) * 2 + Math.cos(z * 0.2) * 2);
-        
-        for (let y = -3; y <= height; y++) {
-            let color = 0x888888;
-            if (y === height) {
-                color = 0x4CAF50;
-            } else if (y > height - 2) {
-                color = 0x8B4513;
-            }
-            createBlock(x, y, z, color);
-        }
+// =============== WORLD GENERATION ===============
+function generateWorld() {
+    blockMap.forEach(mesh => scene.remove(mesh));
+    blockMap.clear();
 
-        // Tree Spawning
-        if (Math.random() < 0.03) {
-            for (let t = 1; t <= 3; t++) {
-                createBlock(x, height + t, z, 0x7B4B25);
+    for (let x = -35; x <= 35; x++) {
+        for (let z = -35; z <= 35; z++) {
+            const height = Math.floor(Math.sin(x*0.08)*2.5 + Math.cos(z*0.08)*2.5 + 3);
+            
+            for (let y = -4; y <= height; y++) {
+                if (y === height) createBlock(x, y, z, 'grass');
+                else if (y >= height - 2) createBlock(x, y, z, 'dirt');
+                else createBlock(x, y, z, 'stone');
             }
-            for (let lx = -1; lx <= 1; lx++) {
-                for (let lz = -1; lz <= 1; lz++) {
-                    for (let ly = 4; ly <= 5; ly++) {
-                        createBlock(x + lx, height + ly, z + lz, 0x228B22);
-                    }
+
+            if (Math.random() < 0.045) {
+                const th = 5;
+                for (let i = 1; i <= th; i++) createBlock(x, height + i, z, 'wood');
+                for (let lx = -2; lx <= 2; lx++)
+                for (let lz = -2; lz <= 2; lz++)
+                for (let ly = 3; ly <= 6; ly++) {
+                    if (Math.random() > 0.25) 
+                        createBlock(x + lx, height + ly, z + lz, 'leaves');
                 }
             }
         }
     }
 }
 
-// Controls State
-camera.position.set(0, 5, 5);
-let yaw = 0, pitch = 0;
+generateWorld();
+
+// =============== SAVE / LOAD ===============
+function saveWorld() {
+    const data = [];
+    blockMap.forEach((mesh) => {
+        data.push({
+            x: Math.floor(mesh.position.x),
+            y: Math.floor(mesh.position.y),
+            z: Math.floor(mesh.position.z),
+            type: mesh.userData.type
+        });
+    });
+    
+    localStorage.setItem('minicraft_save', JSON.stringify(data));
+    showNotification("World Saved!", "#0f0");
+}
+
+function loadWorld() {
+    const saved = localStorage.getItem('minicraft_save');
+    if (!saved) {
+        showNotification("No saved world found!", "#ff0");
+        return;
+    }
+    
+    const data = JSON.parse(saved);
+    blockMap.forEach(mesh => scene.remove(mesh));
+    blockMap.clear();
+
+    data.forEach(b => createBlock(b.x, b.y, b.z, b.type));
+    showNotification("World Loaded!", "#0f0");
+}
+
+function showNotification(text, color) {
+    const notif = document.getElementById('notification');
+    notif.textContent = text;
+    notif.style.color = color;
+    notif.style.display = 'block';
+    setTimeout(() => notif.style.display = 'none', 2000);
+}
+
+// =============== PLAYER & CONTROLS ===============
+camera.position.set(8, 15, 8);
+let yaw = -Math.PI/4, pitch = 0;
 const keys = {};
+let velocityY = 0;
+let onGround = false;
 
-document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-document.body.addEventListener('click', () => {
-    document.body.requestPointerLock();
-});
-
-document.addEventListener('mousemove', e => {
-    if (document.pointerLockElement === document.body) {
-        yaw -= e.movementX * 0.002;
-        pitch -= e.movementY * 0.002;
-        pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, pitch));
-        
-        camera.rotation.order = "YXZ";
-        camera.rotation.y = yaw;
-        camera.rotation.x = pitch;
+document.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    
+    if (e.key.toLowerCase() === 's') saveWorld();
+    if (e.key.toLowerCase() === 'l') loadWorld();
+    if (e.key.toLowerCase() === 'r') {
+        if (confirm("Reset world to default?")) generateWorld();
     }
 });
 
-// Physics Configuration
-let velocityY = 0;
-const playerRadius = 0.3;
-const playerHeight = 1.6;
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-function checkCollision(pos) {
-    const minX = Math.floor(pos.x - playerRadius);
-    const maxX = Math.floor(pos.x + playerRadius);
-    const minY = Math.floor(pos.y - playerHeight);
-    const maxY = Math.floor(pos.y);
-    const minZ = Math.floor(pos.z - playerRadius);
-    const maxZ = Math.floor(pos.z + playerRadius);
+document.body.addEventListener('click', () => document.body.requestPointerLock());
 
-    for (let x = minX; x <= maxX; x++) {
-        for (let y = minY; y <= maxY; y++) {
-            for (let z = minZ; z <= maxZ; z++) {
-                if (blockMap.has(getCoordKey(x, y, z))) {
-                    return true;
-                }
+document.addEventListener('mousemove', e => {
+    if (document.pointerLockElement) {
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+        pitch = Math.max(-1.55, Math.min(1.55, pitch));
+        camera.rotation.set(pitch, yaw, 0);
+    }
+});
+
+// Block Selection
+let selectedType = 'grass';
+const blockOrder = ['grass','dirt','stone','wood','leaves'];
+document.addEventListener('keydown', e => {
+    if (e.key >= '1' && e.key <= '5') {
+        selectedType = blockOrder[e.key - 1];
+        document.getElementById('blockName').textContent = BLOCK_TYPES[selectedType].name;
+    }
+});
+
+// Raycaster & Highlight
+const raycaster = new THREE.Raycaster();
+let highlight = null;
+
+function updateHighlight() {
+    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+    const hits = raycaster.intersectObjects(Array.from(blockMap.values()));
+    if (highlight) highlight.material.emissive?.set(0x000000);
+    highlight = (hits.length > 0 && hits[0].distance < 8) ? hits[0].object : null;
+    if (highlight) highlight.material.emissive?.set(0x555555);
+}
+
+// Collision
+function isColliding(pos) {
+    for (let x = Math.floor(pos.x - 0.35); x <= Math.floor(pos.x + 0.35); x++) {
+        for (let y = Math.floor(pos.y - 1.7); y <= Math.floor(pos.y + 0.2); y++) {
+            for (let z = Math.floor(pos.z - 0.35); z <= Math.floor(pos.z + 0.35); z++) {
+                if (blockMap.has(getKey(x, y, z))) return true;
             }
         }
     }
@@ -196,79 +222,65 @@ function checkCollision(pos) {
 }
 
 // Interactions
-const raycaster = new THREE.Raycaster();
 window.addEventListener('mousedown', e => {
-    if (document.pointerLockElement !== document.body) return;
-
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-    const hits = raycaster.intersectObjects(blocks);
-
-    if (hits.length > 0 && hits[0].distance < 6) {
+    if (!document.pointerLockElement) return;
+    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+    const hits = raycaster.intersectObjects(Array.from(blockMap.values()));
+    
+    if (hits.length > 0 && hits[0].distance < 8) {
         const hit = hits[0];
-        if (e.button === 0) {
-            removeBlock(hit.object);
-        } else if (e.button === 2) {
-            const normal = hit.face.normal;
-            const pos = hit.object.position.clone().add(normal);
-            createBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z), 0x4CAF50);
+        if (e.button === 0) removeBlock(hit.object);
+        else if (e.button === 2) {
+            const pos = hit.object.position.clone().add(hit.face.normal);
+            if (pos.distanceTo(camera.position) > 1.6) {
+                createBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z), selectedType);
+            }
         }
     }
 });
-
 window.addEventListener('contextmenu', e => e.preventDefault());
 
-// Game Loop
+// =============== GAME LOOP ===============
 function animate() {
     requestAnimationFrame(animate);
 
-    const speed = 0.1;
-    const moveVector = new THREE.Vector3();
+    const speed = 0.22;
+    const move = new THREE.Vector3();
+    if (keys['w']) move.z -= 1;
+    if (keys['s']) move.z += 1;
+    if (keys['a']) move.x -= 1;
+    if (keys['d']) move.x += 1;
 
-    // Direction Fixed: Forward/backward aligned with camera angle
-    if (keys["w"]) moveVector.z -= 1;
-    if (keys["s"]) moveVector.z += 1;
-    if (keys["a"]) moveVector.x -= 1;
-    if (keys["d"]) moveVector.x += 1;
+    if (move.length() > 0) {
+        move.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw).multiplyScalar(speed);
+        camera.position.x += move.x;
+        if (isColliding(camera.position)) camera.position.x -= move.x;
+        camera.position.z += move.z;
+        if (isColliding(camera.position)) camera.position.z -= move.z;
+    }
 
-    moveVector.normalize();
-    moveVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-    moveVector.multiplyScalar(speed);
-
-    // Apply X Movement and Test Collision
-    camera.position.x += moveVector.x;
-    if (checkCollision(camera.position)) camera.position.x -= moveVector.x;
-
-    // Apply Z Movement and Test Collision
-    camera.position.z += moveVector.z;
-    if (checkCollision(camera.position)) camera.position.z -= moveVector.z;
-
-    // Gravity and Vertical Physics
-    velocityY -= 0.01;
+    velocityY -= 0.022;
     camera.position.y += velocityY;
-
-    let grounded = false;
-    if (checkCollision(camera.position)) {
+    if (isColliding(camera.position)) {
         camera.position.y -= velocityY;
-        if (velocityY < 0) grounded = true;
         velocityY = 0;
+        onGround = true;
+    } else onGround = false;
+
+    if (keys[' '] && onGround) {
+        velocityY = 0.32;
+        onGround = false;
     }
 
-    // Jump Execution
-    if (keys[" "] && grounded) {
-        velocityY = 0.18;
-    }
+    if (camera.position.y < -40) camera.position.set(8, 20, 8);
 
-    // Fall Protection (Void Check)
-    if (camera.position.y < -20) {
-        camera.position.set(0, 10, 0);
-        velocityY = 0;
-    }
-
+    updateHighlight();
     renderer.render(scene, camera);
 }
 
 animate();
 
+// Resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
