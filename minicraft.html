@@ -3,447 +3,277 @@
 <head>
 <meta charset="UTF-8">
 <title>MiniCraft</title>
-
 <style>
-body{
-    margin:0;
-    overflow:hidden;
-    background:#87CEEB;
-    font-family:Arial,sans-serif;
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #87CEEB;
+    font-family: Arial, sans-serif;
+    user-select: none;
 }
-
-#ui{
-    position:absolute;
-    top:10px;
-    left:10px;
-    background:rgba(0,0,0,0.5);
-    color:white;
-    padding:12px;
-    border-radius:12px;
-    z-index:10;
+#ui {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    z-index: 10;
+    pointer-events: none;
+    line-height: 1.5;
 }
-
-#crosshair{
-    position:absolute;
-    top:50%;
-    left:50%;
-    width:20px;
-    height:20px;
-    transform:translate(-50%,-50%);
-    pointer-events:none;
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
 }
-
 #crosshair::before,
-#crosshair::after{
-    content:"";
-    position:absolute;
-    background:white;
+#crosshair::after {
+    content: "";
+    position: absolute;
+    background: white;
 }
-
-#crosshair::before{
-    width:2px;
-    height:20px;
-    left:9px;
+#crosshair::before {
+    width: 2px;
+    height: 20px;
+    left: 9px;
 }
-
-#crosshair::after{
-    width:20px;
-    height:2px;
-    top:9px;
+#crosshair::after {
+    width: 20px;
+    height: 2px;
+    top: 9px;
 }
 </style>
 </head>
-
 <body>
 
 <div id="ui">
-Click Screen To Play<br>
-WASD Move<br>
-Mouse Look<br>
-SPACE Jump<br>
-Left Click Break<br>
-Right Click Place
+<strong>MiniCraft Controls:</strong><br>
+• Click Screen to Play & Lock Mouse<br>
+• WASD to Move Around<br>
+• Move Mouse to Look Around<br>
+• SPACE to Jump<br>
+• Left Click to Destroy Block<br>
+• Right Click to Place Block
 </div>
 
 <div id="crosshair"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 <script>
-
+// Game Setup
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.05);
 
-const camera =
-new THREE.PerspectiveCamera(
-75,
-window.innerWidth/window.innerHeight,
-0.1,
-1000
-);
-
-const renderer =
-new THREE.WebGLRenderer({
-antialias:true
-});
-
-renderer.setSize(
-window.innerWidth,
-window.innerHeight
-);
-
-document.body.appendChild(
-renderer.domElement
-);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
 // Lighting
-const sunlight =
-new THREE.DirectionalLight(
-0xffffff,
-1
-);
-
-sunlight.position.set(
-10,20,10
-);
-
+const sunlight = new THREE.DirectionalLight(0xffffff, 0.8);
+sunlight.position.set(20, 40, 20);
 scene.add(sunlight);
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-scene.add(
-new THREE.AmbientLight(
-0xffffff,
-0.5
-)
-);
-
-// Blocks
+// Block Map Management
 const blocks = [];
+const blockMap = new Map();
+const geometry = new THREE.BoxGeometry(1, 1, 1);
 
-const geometry =
-new THREE.BoxGeometry(1,1,1);
-
-function createBlock(
-x,y,z,color
-){
-
-const material =
-new THREE.MeshLambertMaterial({
-color
-});
-
-const cube =
-new THREE.Mesh(
-geometry,
-material
-);
-
-cube.position.set(x,y,z);
-
-scene.add(cube);
-
-blocks.push(cube);
-
-return cube;
+function getCoordKey(x, y, z) {
+    return `${x},${y},${z}`;
 }
 
-// Terrain
-for(let x=-25;x<25;x++){
+function createBlock(x, y, z, color) {
+    const key = getCoordKey(x, y, z);
+    if (blockMap.has(key)) return null;
 
-for(let z=-25;z<25;z++){
-
-let height =
-Math.floor(
-Math.sin(x*0.25)*2 +
-Math.cos(z*0.25)*2
-);
-
-for(let y=-4;y<=height;y++){
-
-let color = 0x888888;
-
-if(y===height){
-color = 0x4CAF50;
-}
-else if(y>height-2){
-color = 0x8B4513;
+    const material = new THREE.MeshLambertMaterial({ color });
+    const cube = new THREE.Mesh(geometry, material);
+    cube.position.set(x, y, z);
+    
+    scene.add(cube);
+    blocks.push(cube);
+    blockMap.set(key, cube);
+    return cube;
 }
 
-createBlock(
-x,y,z,color
-);
+function removeBlock(mesh) {
+    const idx = blocks.indexOf(mesh);
+    if (idx > -1) blocks.splice(idx, 1);
+    
+    const key = getCoordKey(mesh.position.x, mesh.position.y, mesh.position.z);
+    blockMap.delete(key);
+    scene.remove(mesh);
 }
 
-// Trees
-if(Math.random()<0.04){
+// Terrain Generation
+for (let x = -15; x <= 15; x++) {
+    for (let z = -15; z <= 15; z++) {
+        let height = Math.floor(Math.sin(x * 0.2) * 2 + Math.cos(z * 0.2) * 2);
+        
+        for (let y = -3; y <= height; y++) {
+            let color = 0x888888;
+            if (y === height) {
+                color = 0x4CAF50;
+            } else if (y > height - 2) {
+                color = 0x8B4513;
+            }
+            createBlock(x, y, z, color);
+        }
 
-for(let t=1;t<=4;t++){
-
-createBlock(
-x,
-height+t,
-z,
-0x7B4B25
-);
+        // Tree Spawning
+        if (Math.random() < 0.03) {
+            for (let t = 1; t <= 3; t++) {
+                createBlock(x, height + t, z, 0x7B4B25);
+            }
+            for (let lx = -1; lx <= 1; lx++) {
+                for (let lz = -1; lz <= 1; lz++) {
+                    for (let ly = 4; ly <= 5; ly++) {
+                        createBlock(x + lx, height + ly, z + lz, 0x228B22);
+                    }
+                }
+            }
+        }
+    }
 }
 
-for(let lx=-2;lx<=2;lx++){
-for(let lz=-2;lz<=2;lz++){
-
-if(
-Math.abs(lx)+
-Math.abs(lz) < 4
-){
-
-createBlock(
-x+lx,
-height+5,
-z+lz,
-0x228B22
-);
-}
-}
-}
-}
-}
-}
-
-// Camera
-camera.position.set(
-0,5,10
-);
-
-// Controls
-let yaw = 0;
-let pitch = 0;
-
+// Controls State
+camera.position.set(0, 5, 5);
+let yaw = 0, pitch = 0;
 const keys = {};
 
-document.addEventListener(
-'keydown',
-e=>{
-keys[e.key.toLowerCase()]
-= true;
+document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+document.body.addEventListener('click', () => {
+    document.body.requestPointerLock();
 });
 
-document.addEventListener(
-'keyup',
-e=>{
-keys[e.key.toLowerCase()]
-= false;
+document.addEventListener('mousemove', e => {
+    if (document.pointerLockElement === document.body) {
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+        pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, pitch));
+        
+        camera.rotation.order = "YXZ";
+        camera.rotation.y = yaw;
+        camera.rotation.x = pitch;
+    }
 });
 
-// Pointer lock
-document.body.addEventListener(
-'click',
-()=>{
-document.body.requestPointerLock();
-});
-
-document.addEventListener(
-'mousemove',
-e=>{
-
-if(
-document.pointerLockElement
-=== document.body
-){
-
-yaw -=
-e.movementX * 0.002;
-
-pitch -=
-e.movementY * 0.002;
-
-pitch = Math.max(
--Math.PI/2,
-Math.min(
-Math.PI/2,
-pitch
-)
-);
-
-camera.rotation.order =
-"YXZ";
-
-camera.rotation.y =
-yaw;
-
-camera.rotation.x =
-pitch;
-}
-});
-
-// Jumping
+// Physics Configuration
 let velocityY = 0;
-let grounded = false;
+const playerRadius = 0.3;
+const playerHeight = 1.6;
 
-// Raycaster
-const raycaster =
-new THREE.Raycaster();
+function checkCollision(pos) {
+    const minX = Math.floor(pos.x - playerRadius);
+    const maxX = Math.floor(pos.x + playerRadius);
+    const minY = Math.floor(pos.y - playerHeight);
+    const maxY = Math.floor(pos.y);
+    const minZ = Math.floor(pos.z - playerRadius);
+    const maxZ = Math.floor(pos.z + playerRadius);
 
-window.addEventListener(
-'mousedown',
-e=>{
-
-raycaster.setFromCamera(
-new THREE.Vector2(0,0),
-camera
-);
-
-const hits =
-raycaster.intersectObjects(
-blocks
-);
-
-if(hits.length > 0){
-
-const hit = hits[0];
-
-if(e.button === 0){
-
-scene.remove(
-hit.object
-);
-
-const index =
-blocks.indexOf(
-hit.object
-);
-
-if(index > -1){
-
-blocks.splice(
-index,
-1
-);
-}
+    for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+            for (let z = minZ; z <= maxZ; z++) {
+                if (blockMap.has(getCoordKey(x, y, z))) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
-if(e.button === 2){
+// Interactions
+const raycaster = new THREE.Raycaster();
+window.addEventListener('mousedown', e => {
+    if (document.pointerLockElement !== document.body) return;
 
-const normal =
-hit.face.normal;
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const hits = raycaster.intersectObjects(blocks);
 
-const pos =
-hit.object.position
-.clone()
-.add(normal);
-
-createBlock(
-Math.round(pos.x),
-Math.round(pos.y),
-Math.round(pos.z),
-0x4CAF50
-);
-}
-}
+    if (hits.length > 0 && hits[0].distance < 6) {
+        const hit = hits[0];
+        if (e.button === 0) {
+            removeBlock(hit.object);
+        } else if (e.button === 2) {
+            const normal = hit.face.normal;
+            const pos = hit.object.position.clone().add(normal);
+            createBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z), 0x4CAF50);
+        }
+    }
 });
 
-window.addEventListener(
-'contextmenu',
-e=>e.preventDefault()
-);
+window.addEventListener('contextmenu', e => e.preventDefault());
 
-// Game loop
-function animate(){
+// Game Loop
+function animate() {
+    requestAnimationFrame(animate);
 
-requestAnimationFrame(
-animate
-);
+    const speed = 0.1;
+    const moveVector = new THREE.Vector3();
 
-const speed = 0.12;
+    // Direction Fixed: Forward/backward aligned with camera angle
+    if (keys["w"]) moveVector.z -= 1;
+    if (keys["s"]) moveVector.z += 1;
+    if (keys["a"]) moveVector.x -= 1;
+    if (keys["d"]) moveVector.x += 1;
 
-const forward =
-new THREE.Vector3(
-Math.sin(yaw),
-0,
-Math.cos(yaw)
-);
+    moveVector.normalize();
+    moveVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+    moveVector.multiplyScalar(speed);
 
-const right =
-new THREE.Vector3(
-Math.cos(yaw),
-0,
--Math.sin(yaw)
-);
+    // Apply X Movement and Test Collision
+    camera.position.x += moveVector.x;
+    if (checkCollision(camera.position)) camera.position.x -= moveVector.x;
 
-if(keys["w"]){
+    // Apply Z Movement and Test Collision
+    camera.position.z += moveVector.z;
+    if (checkCollision(camera.position)) camera.position.z -= moveVector.z;
 
-camera.position.add(
-forward.clone()
-.multiplyScalar(speed)
-);
-}
+    // Gravity and Vertical Physics
+    velocityY -= 0.01;
+    camera.position.y += velocityY;
 
-if(keys["s"]){
+    let grounded = false;
+    if (checkCollision(camera.position)) {
+        camera.position.y -= velocityY;
+        if (velocityY < 0) grounded = true;
+        velocityY = 0;
+    }
 
-camera.position.add(
-forward.clone()
-.multiplyScalar(-speed)
-);
-}
+    // Jump Execution
+    if (keys[" "] && grounded) {
+        velocityY = 0.18;
+    }
 
-if(keys["a"]){
+    // Fall Protection (Void Check)
+    if (camera.position.y < -20) {
+        camera.position.set(0, 10, 0);
+        velocityY = 0;
+    }
 
-camera.position.add(
-right.clone()
-.multiplyScalar(-speed)
-);
-}
-
-if(keys["d"]){
-
-camera.position.add(
-right.clone()
-.multiplyScalar(speed)
-);
-}
-
-// Gravity
-velocityY -= 0.01;
-
-camera.position.y +=
-velocityY;
-
-if(camera.position.y < 3){
-
-camera.position.y = 3;
-velocityY = 0;
-grounded = true;
-}
-
-if(
-keys[" "] &&
-grounded
-){
-velocityY = 0.22;
-grounded = false;
-}
-
-renderer.render(
-scene,
-camera
-);
+    renderer.render(scene, camera);
 }
 
 animate();
 
-window.addEventListener(
-'resize',
-()=>{
-
-camera.aspect =
-window.innerWidth/
-window.innerHeight;
-
-camera.updateProjectionMatrix();
-
-renderer.setSize(
-window.innerWidth,
-window.innerHeight
-);
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
-
 </body>
 </html>
