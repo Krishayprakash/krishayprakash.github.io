@@ -121,10 +121,11 @@ img {
 
 <header>
     <h1 id="typing"></h1>
-<p>Author | Student | Creator</p>
-  <marquee behavior="scroll" direction="left">
-    <p id="clock" style="margin-top:10px; font-size:16px;"></p>
-</marquee> 
+    <p>Author | Student | Creator</p>
+    <marquee behavior="scroll" direction="left">
+        <span id="date" style="margin-right: 20px; font-size: 16px;"></span>
+        <span id="clock" style="font-size: 16px;"></span>
+    </marquee> 
     <button onclick="toggleMode()">🌙 Toggle Dark Mode</button>
     <button onclick="changeColor()">🎨 Change Theme</button>
 </header>
@@ -132,13 +133,14 @@ img {
 <script>
 function updateClock() {
     const now = new Date();
-    document.getElementById("clock").innerText =
-        now.toLocaleTimeString();
+    
+    document.getElementById("date").innerText = now.toLocaleDateString();
+    document.getElementById("clock").innerText = now.toLocaleTimeString();
 }
 setInterval(updateClock, 1000);
 updateClock();
 </script>
-</header>
+
 
 <nav>
     <a href="#about">About</a>
