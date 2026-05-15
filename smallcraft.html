@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>SmallCraft by Krishay Prakash</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
-    body { margin: 0; overflow: hidden; background: #87CEEB; font-family: Arial, sans-serif; user-select: none; }
+    body { margin: 0; overflow: hidden; background: #87CEEB; font-family: Arial, sans-serif; user-select: none; touch-action: none; }
     #ui {
         position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white;
-        padding: 12px; border-radius: 8px; z-index: 10; pointer-events: none; line-height: 1.4;
+        padding: 12px; border-radius: 8px; z-index: 10; pointer-events: none; line-height: 1.4; font-size: 14px;
     }
     #notification {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -18,25 +19,65 @@
     #crosshair::before, #crosshair::after { content: ""; position: absolute; background: white; }
     #crosshair::before { width: 2px; height: 20px; left: 9px; }
     #crosshair::after { width: 20px; height: 2px; top: 9px; }
+
     #selected {
         position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
         background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 8px; color: white;
         display: flex; align-items: center; gap: 12px; z-index: 10; font-size: 18px;
     }
+
+    /* Mobile Controls */
+    .mobile-controls {
+        position: absolute; bottom: 20px; width: 100%; display: none; z-index: 15; pointer-events: none;
+    }
+    .joystick {
+        position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px;
+        background: rgba(255,255,255,0.15); border: 3px solid rgba(255,255,255,0.4);
+        border-radius: 50%; pointer-events: all;
+    }
+    .joystick-knob {
+        position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+        background: rgba(255,255,255,0.6); border-radius: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .action-btn {
+        position: absolute; bottom: 40px; width: 70px; height: 70px;
+        background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.5);
+        border-radius: 50%; color: white; font-size: 14px; font-weight: bold;
+        display: flex; align-items: center; justify-content: center;
+        pointer-events: all;
+    }
+    #jump-btn { right: 100px; }
+    #place-btn { right: 190px; background: rgba(0,255,100,0.3); }
+    #break-btn { right: 280px; background: rgba(255,80,80,0.3); }
+
+    .block-selector {
+        position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 8px; z-index: 15;
+    }
+    .block-btn {
+        width: 50px; height: 50px; border: 3px solid white; border-radius: 8px;
+        pointer-events: all;
+    }
 </style>
 </head>
 <body>
 <div id="ui">
-    <strong>MiniCraft</strong><br>
-    Click to lock mouse<br>
-    WASD Move • Mouse Look • SPACE Jump<br>
-    Left Click Break • Right Click Place<br>
-    1-5 Select Block<br>
-    <strong>S</strong> = Save • <strong>L</strong> = Load • <strong>R</strong> = Reset
+    <strong>SmallCraft by Krishay Prakash</strong><br>
+    <span id="control-info">Click to lock mouse (PC)</span>
 </div>
 <div id="crosshair"></div>
 <div id="selected">Selected: <span id="blockName" style="font-weight:bold">Grass</span></div>
 <div id="notification"></div>
+
+<!-- Mobile Controls -->
+<div class="mobile-controls" id="mobileControls">
+    <div class="joystick" id="joystick"><div class="joystick-knob" id="joystickKnob"></div></div>
+    <button class="action-btn" id="jump-btn">JUMP</button>
+    <button class="action-btn" id="place-btn">PLACE</button>
+    <button class="action-btn" id="break-btn">BREAK</button>
+    <div class="block-selector" id="blockSelector"></div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script>
@@ -53,15 +94,14 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.DirectionalLight(0xffffff, 1.1));
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-// =============== BLOCKS ===============
+// =============== BLOCKS & WORLD ===============
 const blockMap = new Map();
 const geometry = new THREE.BoxGeometry(1, 1, 1);
-
 const BLOCK_TYPES = {
-    grass:  { color: 0x4CAF50, name: "Grass" },
-    dirt:   { color: 0x8B5A2B, name: "Dirt" },
-    stone:  { color: 0x777777, name: "Stone" },
-    wood:   { color: 0xA0522D, name: "Wood" },
+    grass: { color: 0x4CAF50, name: "Grass" },
+    dirt: { color: 0x8B5A2B, name: "Dirt" },
+    stone: { color: 0x777777, name: "Stone" },
+    wood: { color: 0xA0522D, name: "Wood" },
     leaves: { color: 0x228B22, name: "Leaves" }
 };
 
@@ -70,12 +110,10 @@ function getKey(x, y, z) { return `${Math.floor(x)},${Math.floor(y)},${Math.floo
 function createBlock(x, y, z, type = 'grass') {
     const key = getKey(x, y, z);
     if (blockMap.has(key)) return;
-    
     const material = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[type].color });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
     mesh.userData.type = type;
-    
     scene.add(mesh);
     blockMap.set(key, mesh);
 }
@@ -87,132 +125,222 @@ function removeBlock(mesh) {
     scene.remove(mesh);
 }
 
-// =============== WORLD GENERATION ===============
 function generateWorld() {
-    blockMap.forEach(mesh => scene.remove(mesh));
+    blockMap.forEach(m => scene.remove(m));
     blockMap.clear();
-
     for (let x = -35; x <= 35; x++) {
         for (let z = -35; z <= 35; z++) {
             const height = Math.floor(Math.sin(x*0.08)*2.5 + Math.cos(z*0.08)*2.5 + 3);
-            
             for (let y = -4; y <= height; y++) {
                 if (y === height) createBlock(x, y, z, 'grass');
                 else if (y >= height - 2) createBlock(x, y, z, 'dirt');
                 else createBlock(x, y, z, 'stone');
             }
-
             if (Math.random() < 0.045) {
-                const th = 5;
-                for (let i = 1; i <= th; i++) createBlock(x, height + i, z, 'wood');
+                for (let i = 1; i <= 5; i++) createBlock(x, height + i, z, 'wood');
                 for (let lx = -2; lx <= 2; lx++)
                 for (let lz = -2; lz <= 2; lz++)
                 for (let ly = 3; ly <= 6; ly++) {
-                    if (Math.random() > 0.25) 
-                        createBlock(x + lx, height + ly, z + lz, 'leaves');
+                    if (Math.random() > 0.25) createBlock(x + lx, height + ly, z + lz, 'leaves');
                 }
             }
         }
     }
 }
-
 generateWorld();
 
 // =============== SAVE / LOAD ===============
 function saveWorld() {
-    const data = [];
-    blockMap.forEach((mesh) => {
-        data.push({
-            x: Math.floor(mesh.position.x),
-            y: Math.floor(mesh.position.y),
-            z: Math.floor(mesh.position.z),
-            type: mesh.userData.type
-        });
-    });
-    
+    const data = Array.from(blockMap.values()).map(mesh => ({
+        x: Math.floor(mesh.position.x),
+        y: Math.floor(mesh.position.y),
+        z: Math.floor(mesh.position.z),
+        type: mesh.userData.type
+    }));
     localStorage.setItem('minicraft_save', JSON.stringify(data));
     showNotification("World Saved!", "#0f0");
 }
 
 function loadWorld() {
     const saved = localStorage.getItem('minicraft_save');
-    if (!saved) {
-        showNotification("No saved world found!", "#ff0");
-        return;
-    }
-    
+    if (!saved) return showNotification("No saved world!", "#ff0");
     const data = JSON.parse(saved);
-    blockMap.forEach(mesh => scene.remove(mesh));
+    blockMap.forEach(m => scene.remove(m));
     blockMap.clear();
-
     data.forEach(b => createBlock(b.x, b.y, b.z, b.type));
     showNotification("World Loaded!", "#0f0");
 }
 
 function showNotification(text, color) {
     const notif = document.getElementById('notification');
-    notif.textContent = text;
-    notif.style.color = color;
-    notif.style.display = 'block';
+    notif.textContent = text; notif.style.color = color; notif.style.display = 'block';
     setTimeout(() => notif.style.display = 'none', 2000);
 }
 
-// =============== PLAYER & CONTROLS ===============
+// =============== PLAYER & CAMERA ===============
 camera.position.set(8, 15, 8);
 let yaw = -Math.PI/4, pitch = 0;
-const keys = {};
 let velocityY = 0;
 let onGround = false;
+const keys = {};
+let moveVector = new THREE.Vector2(0, 0); // Mobile joystick
 
+const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+document.getElementById('control-info').textContent = isMobile ? "Touch to play" : "Click to lock mouse";
+
+// =============== DESKTOP CONTROLS ===============
 document.addEventListener('keydown', e => {
     keys[e.key.toLowerCase()] = true;
-    
     if (e.key.toLowerCase() === 's') saveWorld();
     if (e.key.toLowerCase() === 'l') loadWorld();
-    if (e.key.toLowerCase() === 'r') {
-        if (confirm("Reset world to default?")) generateWorld();
+    if (e.key.toLowerCase() === 'r' && confirm("Reset world?")) generateWorld();
+
+    if (e.key >= '1' && e.key <= '5') {
+        selectedType = blockOrder[e.key - 1];
+        updateSelectedBlock();
     }
 });
 
 document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-document.body.addEventListener('click', () => document.body.requestPointerLock());
+document.body.addEventListener('click', () => { if (!isMobile) document.body.requestPointerLock(); });
 
 document.addEventListener('mousemove', e => {
     if (document.pointerLockElement) {
         yaw -= e.movementX * 0.002;
         pitch -= e.movementY * 0.002;
         pitch = Math.max(-1.55, Math.min(1.55, pitch));
-        camera.rotation.set(pitch, yaw, 0);
+        camera.rotation.set(pitch, yaw, 0, 'YXZ'); // Fixed order
     }
 });
 
-// Block Selection
+// =============== BLOCK SELECTION ===============
 let selectedType = 'grass';
 const blockOrder = ['grass','dirt','stone','wood','leaves'];
-document.addEventListener('keydown', e => {
-    if (e.key >= '1' && e.key <= '5') {
-        selectedType = blockOrder[e.key - 1];
-        document.getElementById('blockName').textContent = BLOCK_TYPES[selectedType].name;
-    }
-});
 
-// Raycaster & Highlight
-const raycaster = new THREE.Raycaster();
-let highlight = null;
-
-function updateHighlight() {
-    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-    const hits = raycaster.intersectObjects(Array.from(blockMap.values()));
-    if (highlight) highlight.material.emissive?.set(0x000000);
-    highlight = (hits.length > 0 && hits[0].distance < 8) ? hits[0].object : null;
-    if (highlight) highlight.material.emissive?.set(0x555555);
+function updateSelectedBlock() {
+    document.getElementById('blockName').textContent = BLOCK_TYPES[selectedType].name;
 }
 
-// Collision
+// =============== MOBILE CONTROLS ===============
+if (isMobile) {
+    document.getElementById('mobileControls').style.display = 'block';
+    setupMobileControls();
+}
+
+function setupMobileControls() {
+    // Joystick
+    const joystick = document.getElementById('joystick');
+    const knob = document.getElementById('joystickKnob');
+    let joystickActive = false;
+    let centerX, centerY;
+
+    joystick.addEventListener('touchstart', e => {
+        e.preventDefault();
+        joystickActive = true;
+        const rect = joystick.getBoundingClientRect();
+        centerX = rect.left + 60;
+        centerY = rect.top + 60;
+    });
+
+    document.addEventListener('touchmove', e => {
+        if (!joystickActive) return;
+        const touch = e.touches[0];
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const dist = Math.min(45, Math.hypot(dx, dy));
+        const angle = Math.atan2(dy, dx);
+        dx = Math.cos(angle) * dist;
+        dy = Math.sin(angle) * dist;
+
+        knob.style.transform = `translate(${dx-25}px, ${dy-25}px)`;
+        moveVector.set(dx/45, dy/45);
+    });
+
+    document.addEventListener('touchend', () => {
+        if (joystickActive) {
+            joystickActive = false;
+            knob.style.transform = 'translate(-50%, -50%)';
+            moveVector.set(0, 0);
+        }
+    });
+
+    // Buttons
+    document.getElementById('jump-btn').addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (onGround) velocityY = 0.35; // Slightly stronger jump
+    });
+
+    document.getElementById('break-btn').addEventListener('touchstart', e => { e.preventDefault(); performBreak(); });
+    document.getElementById('place-btn').addEventListener('touchstart', e => { e.preventDefault(); performPlace(); });
+
+    // Block selector
+    const selector = document.getElementById('blockSelector');
+    blockOrder.forEach(type => {
+        const btn = document.createElement('div');
+        btn.className = 'block-btn';
+        btn.style.backgroundColor = '#' + BLOCK_TYPES[type].color.toString(16).padStart(6,'0');
+        btn.addEventListener('touchstart', e => {
+            e.preventDefault();
+            selectedType = type;
+            updateSelectedBlock();
+        });
+        selector.appendChild(btn);
+    });
+
+    // Camera look (right side drag)
+    let lastX = 0, lastY = 0;
+    document.addEventListener('touchstart', e => {
+        if (e.touches[0].clientX > window.innerWidth * 0.45) {
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+        }
+    });
+
+    document.addEventListener('touchmove', e => {
+        const touch = e.touches[0];
+        if (touch.clientX > window.innerWidth * 0.45) {
+            yaw -= (touch.clientX - lastX) * 0.0035;
+            pitch -= (touch.clientY - lastY) * 0.0035;
+            pitch = Math.max(-1.55, Math.min(1.55, pitch));
+            camera.rotation.set(pitch, yaw, 0, 'YXZ');
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+        }
+    });
+}
+
+// =============== INTERACTIONS ===============
+const raycaster = new THREE.Raycaster();
+
+function performBreak() {
+    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+    const hits = raycaster.intersectObjects(Array.from(blockMap.values()));
+    if (hits.length > 0 && hits[0].distance < 8) removeBlock(hits[0].object);
+}
+
+function performPlace() {
+    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+    const hits = raycaster.intersectObjects(Array.from(blockMap.values()));
+    if (hits.length > 0 && hits[0].distance < 8) {
+        const pos = hits[0].object.position.clone().add(hits[0].face.normal);
+        if (pos.distanceTo(camera.position) > 1.7) {
+            createBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z), selectedType);
+        }
+    }
+}
+
+window.addEventListener('mousedown', e => {
+    if (isMobile) return;
+    if (e.button === 0) performBreak();
+    if (e.button === 2) performPlace();
+});
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+// =============== COLLISION ===============
 function isColliding(pos) {
     for (let x = Math.floor(pos.x - 0.35); x <= Math.floor(pos.x + 0.35); x++) {
-        for (let y = Math.floor(pos.y - 1.7); y <= Math.floor(pos.y + 0.2); y++) {
+        for (let y = Math.floor(pos.y - 1.8); y <= Math.floor(pos.y + 0.3); y++) {
             for (let z = Math.floor(pos.z - 0.35); z <= Math.floor(pos.z + 0.35); z++) {
                 if (blockMap.has(getKey(x, y, z))) return true;
             }
@@ -221,63 +349,55 @@ function isColliding(pos) {
     return false;
 }
 
-// Interactions
-window.addEventListener('mousedown', e => {
-    if (!document.pointerLockElement) return;
-    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-    const hits = raycaster.intersectObjects(Array.from(blockMap.values()));
-    
-    if (hits.length > 0 && hits[0].distance < 8) {
-        const hit = hits[0];
-        if (e.button === 0) removeBlock(hit.object);
-        else if (e.button === 2) {
-            const pos = hit.object.position.clone().add(hit.face.normal);
-            if (pos.distanceTo(camera.position) > 1.6) {
-                createBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z), selectedType);
-            }
-        }
-    }
-});
-window.addEventListener('contextmenu', e => e.preventDefault());
-
 // =============== GAME LOOP ===============
 function animate() {
     requestAnimationFrame(animate);
+    const speed = 0.23;
 
-    const speed = 0.22;
     const move = new THREE.Vector3();
-    if (keys['w']) move.z -= 1;
-    if (keys['s']) move.z += 1;
-    if (keys['a']) move.x -= 1;
-    if (keys['d']) move.x += 1;
+
+    // Desktop + Mobile movement
+    if (keys['w'] || moveVector.y < -0.2) move.z -= 1;
+    if (keys['s'] || moveVector.y > 0.2) move.z += 1;
+    if (keys['a'] || moveVector.x < -0.2) move.x -= 1;
+    if (keys['d'] || moveVector.x > 0.2) move.x += 1;
 
     if (move.length() > 0) {
         move.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw).multiplyScalar(speed);
-        camera.position.x += move.x;
-        if (isColliding(camera.position)) camera.position.x -= move.x;
-        camera.position.z += move.z;
-        if (isColliding(camera.position)) camera.position.z -= move.z;
+        const newX = camera.position.x + move.x;
+        const newZ = camera.position.z + move.z;
+
+        camera.position.x = newX;
+        if (isColliding(camera.position)) camera.position.x = camera.position.x - move.x;
+
+        camera.position.z = newZ;
+        if (isColliding(camera.position)) camera.position.z = camera.position.z - move.z;
     }
 
-    velocityY -= 0.022;
+    // Gravity & Jump
+    velocityY -= 0.028;
     camera.position.y += velocityY;
+
     if (isColliding(camera.position)) {
         camera.position.y -= velocityY;
-        velocityY = 0;
-        onGround = true;
-    } else onGround = false;
+        if (velocityY < 0) {
+            velocityY = 0;
+            onGround = true;
+        }
+    } else {
+        onGround = false;
+    }
 
+    // Desktop Jump
     if (keys[' '] && onGround) {
-        velocityY = 0.32;
+        velocityY = 0.38;
         onGround = false;
     }
 
     if (camera.position.y < -40) camera.position.set(8, 20, 8);
 
-    updateHighlight();
     renderer.render(scene, camera);
 }
-
 animate();
 
 // Resize
