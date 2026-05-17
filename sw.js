@@ -1,10 +1,11 @@
-const CACHE_NAME = "krishay-site-v1";
+const CACHE_NAME = "krishay-site-v2";
 
 const urlsToCache = [
   "./",
   "./index.html",
-  "./style.css",
-  "./smallcraft.html"
+  "./smallcraft.html",
+  "./logo.png",
+  "./manifest.json"
 ];
 
 self.addEventListener("install", event => {
