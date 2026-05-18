@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#1e88e5">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" href="./logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 	<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-050GGW76F5"></script>
 <script>
@@ -380,9 +382,12 @@ function toggleMode() {
 </script>
 <script>
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js")
-    .then(() => console.log("PWA Ready"))
-    .catch(err => console.log("PWA Error", err));
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => console.log("PWA Installed"))
+      .catch((err) => console.log("SW Error:", err));
+  });
 }
 </script>
 </body>
