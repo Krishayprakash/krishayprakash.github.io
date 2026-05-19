@@ -257,7 +257,7 @@ This novel is the first in the Swaraj Chaturvedi Adventures series — a saga th
     </p>
 
    <a href="chess.html">
-    <button>🎮 Play SmallCraft</button>
+    <button>🎮 Play Chess</button>
 </a>
 </div>
 
@@ -334,6 +334,7 @@ function typingEffect() {
 typingEffect();
 
 /* Date + 24h Clock */
+/* Date + Time */
 function updateClock() {
     const now = new Date();
 
@@ -350,9 +351,15 @@ function updateClock() {
     const minutes = String(now.getMinutes()).padStart(2, "0");
     const seconds = String(now.getSeconds()).padStart(2, "0");
 
+    // Date
+    document.getElementById("date").innerText =
+        `${dayName}, ${date} ${month} ${year}`;
+
+    // Time
     document.getElementById("clock").innerText =
-        `${dayName}, ${date} ${month} ${year} | ${hours}:${minutes}:${seconds}`;
+        `${hours}:${minutes}:${seconds}`;
 }
+
 setInterval(updateClock, 1000);
 updateClock();
 
