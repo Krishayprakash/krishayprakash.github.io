@@ -81,8 +81,15 @@ h1 {
   font-size: clamp(20px, 4vw, 27px);
 }
 
-button {
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-top: 28px;
+}
+
+button {
   border: 0;
   padding: 13px 24px;
   border-radius: 999px;
@@ -91,6 +98,7 @@ button {
   font-size: 16px;
   cursor: pointer;
   box-shadow: 0 7px 18px rgba(157,61,82,.25);
+  transition: transform .2s;
 }
 
 button:hover {
@@ -163,9 +171,17 @@ button:hover {
     जन्मदिन मुबारक हो पापा! ❤️
   </div>
 
-  <button onclick="celebrate()">
-    🎉 Celebrate!
-  </button>
+  <div class="buttons">
+
+    <button onclick="listenPoem()">
+      🎧 Listen to Poem
+    </button>
+
+    <button onclick="celebrate()">
+      🎉 Celebrate!
+    </button>
+
+  </div>
 
   <div class="footer">
     Made with ❤️ for Papa
@@ -173,19 +189,30 @@ button:hover {
 
 </main>
 
+
+<!-- 🎧 POEM AUDIO -->
+<audio id="poemAudio" src="poem.mp3" preload="auto"></audio>
+
+<!-- 🎵 BIRTHDAY SONGS -->
 <audio id="song1" src="papa.mp3" preload="auto"></audio>
 <audio id="song2" src="papa2.mp3" preload="auto"></audio>
 
+
 <script>
 
+/* Floating hearts */
+
 function createHeart() {
+
   const heart = document.createElement("div");
 
   heart.className = "heart";
+
   heart.textContent =
     ["❤️", "💖", "💕", "✨"][Math.floor(Math.random() * 4)];
 
-  heart.style.left = Math.random() * 100 + "vw";
+  heart.style.left =
+    Math.random() * 100 + "vw";
 
   heart.style.animationDuration =
     (4 + Math.random() * 4) + "s";
@@ -197,15 +224,45 @@ function createHeart() {
   }, 8000);
 }
 
+
+/* 🎧 Play Poem */
+
+function listenPoem() {
+
+  const poemAudio =
+    document.getElementById("poemAudio");
+
+  poemAudio.currentTime = 0;
+
+  poemAudio.play();
+
+}
+
+
+/* 🎉 Play Birthday Songs */
+
 function celebrate() {
 
-  const song1 = document.getElementById("song1");
-  const song2 = document.getElementById("song2");
+  const song1 =
+    document.getElementById("song1");
 
+  const song2 =
+    document.getElementById("song2");
+
+  // Stop poem if it is playing
+  const poemAudio =
+    document.getElementById("poemAudio");
+
+  poemAudio.pause();
+  poemAudio.currentTime = 0;
+
+  // Start first birthday song
   song1.currentTime = 0;
 
   song1.play();
 
+  // When first song finishes,
+  // automatically play second song
   song1.onended = function() {
 
     song2.currentTime = 0;
@@ -214,10 +271,17 @@ function celebrate() {
 
   };
 
+  // Celebration hearts
   for (let i = 0; i < 35; i++) {
+
     setTimeout(createHeart, i * 45);
+
   }
+
 }
+
+
+/* Continuous floating hearts */
 
 setInterval(createHeart, 1200);
 
