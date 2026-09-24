@@ -167,19 +167,17 @@ function celebrate() {
 
 setInterval(createHeart, 1200);
 </script>
-<audio id="birthdaySong" src="papa.mp3" preload="auto"></audio>
+<<audio id="birthdaySong" src="happy-birthday.mp3"></audio>
 
 <script>
+function celebrate() {
   const song = document.getElementById("birthdaySong");
+  song.play();
 
-  // Play the song when the user reaches the end of the page
-  window.addEventListener("scroll", () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 20) {
-      song.play().catch(() => {
-        // Browser may require a user interaction before playing audio
-      });
-    }
-  });
+  for (let i = 0; i < 35; i++) {
+    setTimeout(createHeart, i * 45);
+  }
+}
 </script>
 </body>
 </html>
