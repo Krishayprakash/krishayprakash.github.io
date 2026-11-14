@@ -37,7 +37,7 @@ function renderProducts() {
         <span class="product-category">${safe(p.category)}</span>
         <h3>${safe(p.name)}</h3><p>${safe(p.description)}</p>
         <div class="product-bottom">
-          <span class="price">${active ? money(Number(p.price)) : '<span class="availability">Coming soon</span>'}</span>
+          <span class="price">${Number.isFinite(Number(p.price)) && Number(p.price) > 0 ? money(Number(p.price)) : '<span class="availability">Price to be announced</span>'}</span>
           <button class="add-button" data-add="${safe(p.id)}" ${active ? '' : 'disabled'}>${active ? 'Add to cart' : 'Unavailable'}</button>
         </div>
       </div></article>`;
