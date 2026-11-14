@@ -1,1 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17172a">
+  <meta name="description" content="Books, merchandise and creative services by Krishay Prakash.">
+  <title>Shop | Krishay Prakash</title>
+  <link rel="icon" type="image/png" href="../Logo.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../" aria-label="Krishay Prakash home">
+      <img src="../Logo.png" alt="" onerror="this.style.display='none'">
+      <span>KRISHAY PRAKASH</span>
+    </a>
+    <nav>
+      <a href="../">Home</a>
+      <a href="#catalogue">Shop</a>
+      <button class="cart-button" id="open-cart" type="button">Cart <span id="cart-count">0</span></button>
+    </nav>
+  </header>
 
+  <main>
+    <section class="hero">
+      <p class="eyebrow">THE OFFICIAL STORE</p>
+      <h1>Discover. Read. Play. Create.</h1>
+      <p>Books, merchandise and selected services from Krishay Prakash.</p>
+      <a class="primary-link" href="#catalogue">Explore the store</a>
+    </section>
+
+    <section class="intro">
+      <div>
+        <p class="eyebrow">A LITTLE SOMETHING FOR EVERY CURIOUS MIND</p>
+        <h2>Welcome to the store.</h2>
+      </div>
+      <p>Browse the catalogue below. Items will become available as product details, prices and fulfilment arrangements are finalised.</p>
+    </section>
+
+    <section id="catalogue" class="catalogue-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">THE COLLECTION</p><h2>Shop</h2></div>
+        <label class="filter-label">Category
+          <select id="category-filter">
+            <option value="all">All items</option>
+            <option value="Books">Books</option>
+            <option value="Merchandise">Merchandise</option>
+            <option value="Services">Services</option>
+          </select>
+        </label>
+      </div>
+      <div id="product-grid" class="product-grid">
+        <p class="loading">Loading catalogue…</p>
+      </div>
+    </section>
+
+    <section class="service-note">
+      <div class="note-icon">✦</div>
+      <div><h2>Looking for a service?</h2><p>Service listings will include a clear description, what is included, delivery expectations and pricing before bookings open.</p></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© <span id="year"></span> Krishay Prakash</p>
+    <a href="../Privacy%20Policy.html">Privacy Policy</a>
+    <a href="../">Main website</a>
+  </footer>
+
+  <div class="overlay" id="overlay" hidden></div>
+  <aside class="cart-panel" id="cart-panel" aria-label="Shopping cart" aria-hidden="true">
+    <div class="cart-head"><div><p class="eyebrow">YOUR SELECTION</p><h2>Your cart</h2></div><button class="icon-button" id="close-cart" aria-label="Close cart">×</button></div>
+    <div id="cart-items" class="cart-items"><p class="empty-cart">Your cart is empty.</p></div>
+    <div class="cart-bottom">
+      <div class="cart-total"><span>Subtotal</span><strong id="cart-total">₹0</strong></div>
+      <p class="small-muted">Shipping, taxes and service-specific terms (if applicable) will be confirmed before payment.</p>
+      <button id="checkout-button" class="primary-button" type="button" disabled>Continue to checkout</button>
+    </div>
+  </aside>
+
+  <dialog id="checkout-dialog" class="checkout-dialog">
+    <form method="dialog" class="dialog-top"><div><p class="eyebrow">ORDER ENQUIRY</p><h2>Checkout</h2></div><button class="icon-button" aria-label="Close">×</button></form>
+    <div class="checkout-content">
+      <p>This starter store can prepare an order summary, but online payments are not connected yet. Payment activation requires an approved merchant account and a secure server-side integration.</p>
+      <label>Your name<input id="customer-name" autocomplete="name" maxlength="80" required></label>
+      <label>Email address<input id="customer-email" type="email" autocomplete="email" maxlength="120" required></label>
+      <label>Order notes <textarea id="customer-notes" rows="3" maxlength="500" placeholder="Optional: edition, service details or questions"></textarea></label>
+      <div class="checkout-actions">
+        <button type="button" id="copy-order" class="primary-button">Copy order summary</button>
+        <button type="button" id="cancel-checkout" class="secondary-button">Cancel</button>
+      </div>
+      <p id="checkout-status" class="status" role="status"></p>
+      <p class="small-muted">Do not enter card numbers, UPI PINs, passwords or other payment credentials here.</p>
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>

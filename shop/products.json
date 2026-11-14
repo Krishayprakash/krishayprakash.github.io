@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cursed-hour",
+    "name": "The Cursed Hour",
+    "category": "Books",
+    "description": "Swaraj Chaturvedi Adventures: The Cursed Hour.",
+    "price": null,
+    "type": "physical",
+    "image": "",
+    "active": false,
+    "note": "Add the final selling price, edition, stock and delivery details before publishing."
+  },
+  {
+    "id": "chess-merch",
+    "name": "Chess Merchandise",
+    "category": "Merchandise",
+    "description": "Chess-themed merchandise. Product details and availability to be announced.",
+    "price": null,
+    "type": "physical",
+    "image": "",
+    "active": false,
+    "note": "Replace with a real item, image, price and fulfilment details."
+  },
+  {
+    "id": "creative-service",
+    "name": "Creative Service",
+    "category": "Services",
+    "description": "A placeholder for a service you decide to offer.",
+    "price": null,
+    "type": "service",
+    "image": "",
+    "active": false,
+    "note": "Define the exact service, scope, delivery time and price before activating."
+  }
+]
