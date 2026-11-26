@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#3b202c">
+<title>Happy Anniversary, Mom & Dad</title>
+<style>
+  :root { --wine:#3b202c; --rose:#a95f70; --cream:#fff8f0; --gold:#d7b16d; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; color:var(--cream); font-family:Georgia, 'Times New Roman', serif;
+    background:radial-gradient(ellipse at top, #754452 0%, #3b202c 48%, #21151c 100%);
+    min-height:100vh; overflow-x:hidden;
+  }
+  .sparkles { position:fixed; inset:0; pointer-events:none; opacity:.55;
+    background-image:radial-gradient(#f6dba5 1px, transparent 1.5px);
+    background-size:53px 53px; mask-image:linear-gradient(to bottom,black,transparent 85%);
+  }
+  header { min-height:100svh; display:grid; place-items:center; text-align:center; padding:50px 22px; position:relative; }
+  .hero { max-width:850px; animation:rise 1.2s ease both; }
+  .eyebrow { color:#f0d49e; letter-spacing:.28em; text-transform:uppercase; font:12px Arial,sans-serif; }
+  h1 { font-size:clamp(3rem,9vw,6.8rem); line-height:.98; font-weight:normal; margin:24px 0 18px; }
+  h1 span { display:block; color:#f0d49e; font-style:italic; }
+  .subtitle { font-size:clamp(1.1rem,2.5vw,1.45rem); color:#f4e6df; line-height:1.7; }
+  .ornament { color:var(--gold); font-size:2rem; margin:24px 0; }
+  .button { display:inline-block; margin-top:22px; border:1px solid var(--gold); color:var(--cream);
+    padding:14px 25px; border-radius:999px; text-decoration:none; font:13px Arial,sans-serif;
+    letter-spacing:.1em; transition:.25s; background:#ffffff0b; cursor:pointer; }
+  .button:hover { background:var(--gold); color:#2b1a20; transform:translateY(-2px); }
+  main { max-width:900px; margin:auto; padding:0 22px 90px; }
+  section { text-align:center; padding:65px 0; }
+  .rule { width:90px; height:1px; margin:0 auto 25px; background:var(--gold); }
+  h2 { font-weight:normal; font-size:clamp(2rem,5vw,3.2rem); margin:0 0 20px; }
+  .message { max-width:690px; margin:auto; font-size:1.2rem; line-height:1.95; color:#f3e5df; }
+  .quote { max-width:700px; margin:20px auto; padding:35px 28px; border:1px solid #d7b16d66;
+    background:#ffffff08; border-radius:18px; font-size:clamp(1.35rem,3.5vw,2rem);
+    line-height:1.55; font-style:italic; }
+  .quote small { display:block; margin-top:18px; color:#e7c98e; font:11px Arial,sans-serif; letter-spacing:.2em; text-transform:uppercase; }
+  .letter { display:none; max-width:700px; margin:25px auto 0; padding:28px; border-radius:16px;
+    background:#fff8f0; color:#4b3038; text-align:left; line-height:1.9; font-size:1.08rem; }
+  .letter.show { display:block; animation:rise .7s ease both; }
+  footer { text-align:center; padding:30px 20px 45px; color:#d9c1ba; font:12px Arial,sans-serif; letter-spacing:.12em; }
+  .heart { color:#e7a2a9; }
+  @keyframes rise { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; scroll-behavior:auto!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<div class="sparkles"></div>
+<header>
+  <div class="hero">
+    <div class="eyebrow">A celebration of love · A lifetime of memories</div>
+    <div class="ornament">✦ ❦ ✦</div>
+    <h1>Happy Anniversary <span>Mom &amp; Dad</span></h1>
+    <p class="subtitle">To the two people whose love made our family a home.<br>Today, we celebrate you.</p>
+    <a class="button" href="#message">A little message for you</a>
+  </div>
+</header>
+<main>
+  <section id="message">
+    <div class="rule"></div>
+    <h2>With all my love</h2>
+    <p class="message">
+      Dear Mom and Dad,<br><br>
+      Your journey together is more than a love story. It is a story of patience,
+      understanding, countless little sacrifices, shared dreams, and standing
+      beside each other through every season of life.
+      <br><br>
+      Thank you for filling our home with care, teaching me the meaning of
+      commitment, and showing me that the strongest love is found in the little
+      things we do for one another every day.
+      <br><br>
+      May the years ahead bring you even more laughter, good health, peaceful
+      moments, and beautiful memories together. You both deserve all the
+      happiness in the world.
+    </p>
+  </section>
+  <section>
+    <div class="quote">
+      “The most beautiful thing about love is not just finding each other,
+      but choosing each other, every single day.”
+      <small>For Mom &amp; Dad</small>
+    </div>
+  </section>
+  <section>
+    <div class="rule"></div>
+    <h2>A wish from the heart</h2>
+    <p class="message">May your love continue to grow, your smiles never fade,
+      and your togetherness remain the most beautiful part of every tomorrow.</p>
+    <button class="button" id="letterButton" type="button" aria-expanded="false">Open your surprise message ♡</button>
+    <div class="letter" id="letter">
+      <strong>Dear Mummy and Papa,</strong><br><br>
+      Happy Wedding Anniversary! I feel lucky to have you both as my parents.
+      Thank you for everything you do, for every lesson, every bit of support,
+      and every moment that makes our family special. I hope you always keep
+      smiling and stay happy together. May your bond become stronger with every
+      passing year.<br><br>
+      I love you both. ❤️
+      <br><br><strong>With love,<br>Your children,<br>Krishay Prakash &amp; Kritvik Prakash</strong>
+    </div>
+  </section>
+</main>
+<footer>MADE WITH <span class="heart">♥</span> FOR MOM &amp; DAD · HAPPY ANNIVERSARY</footer>
+<script>
+  const button = document.getElementById('letterButton');
+  const letter = document.getElementById('letter');
+  button.addEventListener('click', () => {
+    const open = letter.classList.toggle('show');
+    button.setAttribute('aria-expanded', String(open));
+    button.textContent = open ? 'Close message' : 'Open your surprise message ♡';
+  });
+</script>
+</body>
+</html>
